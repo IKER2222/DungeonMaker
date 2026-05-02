@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DungeonMaker — Generador de historias de D&D</title>
+  <meta name="description" content="Genera historias originales de Dungeons & Dragons con IA. Elige temas, añade tus personajes y deja que la magia ocurra.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230077b6'%3E%3Cpath d='M12 2 2 8v8l10 6 10-6V8L12 2zm0 2.3 7.6 4.6L12 13.4 4.4 8.9 12 4.3zM4 10.6l7 4.2v6.4l-7-4.2v-6.4zm9 10.6v-6.4l7-4.2v6.4l-7 4.2z'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <svg class="d20-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2 2 8v8l10 6 10-6V8L12 2zm0 2.3 7.6 4.6L12 13.4 4.4 8.9 12 4.3zM4 10.6l7 4.2v6.4l-7-4.2v-6.4zm9 10.6v-6.4l7-4.2v6.4l-7 4.2z"/>
+      </svg>
+      <h1>DungeonMaker</h1>
+    </div>
+    <p class="tagline">Forja historias épicas de Dungeons &amp; Dragons con IA</p>
+  </header>
+
+  <main>
+    <!-- 1. API Key -->
+    <section class="card" aria-labelledby="step-1">
+      <header class="card-header">
+        <span class="step-num">1</span>
+        <h2 id="step-1">Tu API Key de OpenAI</h2>
+      </header>
+      <p class="hint">
+        Necesaria para generar historias.
+        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">Conseguir una</a>.
+        Tu key se queda en tu navegador y se envía únicamente a OpenAI.
+      </p>
+      <div class="api-key-row">
+        <div class="input-with-icon">
+          <input type="password" id="api-key" placeholder="sk-..." autocomplete="off" spellcheck="false">
+          <button type="button" id="toggle-key" class="icon-btn" aria-label="Mostrar u ocultar la key">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+          </button>
+        </div>
+        <button type="button" id="forget-key" class="ghost-btn">Olvidar key</button>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="remember-key" checked>
+        <span>Recordar en este navegador</span>
+      </label>
+    </section>
+
+    <form id="story-form" novalidate>
+      <!-- 2. Temas -->
+      <section class="card" aria-labelledby="step-2">
+        <header class="card-header">
+          <span class="step-num">2</span>
+          <h2 id="step-2">Temas de la historia</h2>
+        </header>
+        <p class="hint">Selecciona uno o varios temas que te inspiren.</p>
+        <div class="theme-grid" role="group" aria-label="Temas disponibles">
+          <label class="theme-card"><input type="checkbox" name="themes" value="fantasía épica"><span>⚔️ Fantasía épica</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="terror y horror cósmico"><span>🕯️ Terror</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="misterio e investigación"><span>🔍 Misterio</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="aventura y exploración"><span>🗺️ Aventura</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="intriga política"><span>👑 Intriga política</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="sobrenatural y arcano"><span>🔮 Sobrenatural</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="steampunk fantástico"><span>⚙️ Steampunk</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="apocalíptico y postapocalíptico"><span>☄️ Apocalíptico</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="atraco y heist"><span>💰 Atraco (heist)</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="bélico y militar"><span>🛡️ Bélico</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="comedia y picaresca"><span>🎭 Comedia</span></label>
+          <label class="theme-card"><input type="checkbox" name="themes" value="romance y drama"><span>🌹 Romance</span></label>
+        </div>
+      </section>
+
+      <!-- 3. Detalles -->
+      <section class="card" aria-labelledby="step-3">
+        <header class="card-header">
+          <span class="step-num">3</span>
+          <h2 id="step-3">Detalles personalizados <span class="optional">(opcional)</span></h2>
+        </header>
+        <p class="hint">Añade tantos detalles como quieras: cuanto más concretos, mejor será la historia.</p>
+        <div class="custom-fields">
+          <label class="field">
+            <span class="field-label">Ciudades o lugares</span>
+            <input type="text" name="cities" placeholder="Ej: Hollowmere, Bosque Susurrante, Torre del Cuervo">
+          </label>
+          <label class="field">
+            <span class="field-label">Personajes principales</span>
+            <input type="text" name="characters" placeholder="Ej: Lyra (elfa exploradora), Brunn (enano clérigo)">
+          </label>
+          <label class="field">
+            <span class="field-label">Jefe final / Villano principal</span>
+            <input type="text" name="villain" placeholder="Ej: Vorthak, lich corrupto que busca el cetro de la noche">
+          </label>
+          <label class="field">
+            <span class="field-label">Enemigos secundarios</span>
+            <input type="text" name="enemies" placeholder="Ej: cultistas, gólems de piedra, kobolds saqueadores">
+          </label>
+          <label class="field full-width">
+            <span class="field-label">Ambientación</span>
+            <textarea name="setting" rows="2" placeholder="Ej: un reino medieval cubierto por una niebla mágica eterna..."></textarea>
+          </label>
+          <label class="field full-width">
+            <span class="field-label">Notas adicionales</span>
+            <textarea name="notes" rows="2" placeholder="Nivel del grupo, plot twists, restricciones, tono específico..."></textarea>
+          </label>
+        </div>
+      </section>
+
+      <!-- 4. Configuración -->
+      <section class="card" aria-labelledby="step-4">
+        <header class="card-header">
+          <span class="step-num">4</span>
+          <h2 id="step-4">Configuración</h2>
+        </header>
+        <div class="config-row">
+          <label class="field">
+            <span class="field-label">Tono</span>
+            <select name="tone">
+              <option value="heroico">Heroico</option>
+              <option value="oscuro">Oscuro</option>
+              <option value="cómico">Cómico</option>
+              <option value="misterioso">Misterioso</option>
+              <option value="épico" selected>Épico</option>
+              <option value="trágico">Trágico</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Duración</span>
+            <select name="duration">
+              <option value="corta">Corta (~500 palabras)</option>
+              <option value="media" selected>Media (~1000 palabras)</option>
+              <option value="larga">Larga (~2000 palabras)</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <button type="submit" id="generate-btn" class="primary-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 8v8l10 6 10-6V8L12 2zm0 2.3 7.6 4.6L12 13.4 4.4 8.9 12 4.3zM4 10.6l7 4.2v6.4l-7-4.2v-6.4zm9 10.6v-6.4l7-4.2v6.4l-7 4.2z"/></svg>
+        <span>Forjar historia</span>
+      </button>
+    </form>
+
+    <!-- Loading -->
+    <section id="loading" class="card loading-card" hidden>
+      <div class="d20-spinner" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 2 2 8v8l10 6 10-6V8L12 2zm0 2.3 7.6 4.6L12 13.4 4.4 8.9 12 4.3zM4 10.6l7 4.2v6.4l-7-4.2v-6.4zm9 10.6v-6.4l7-4.2v6.4l-7 4.2z"/></svg>
+      </div>
+      <p class="loading-text">Tirando los dados del destino...</p>
+    </section>
+
+    <!-- Error -->
+    <section id="error" class="card error-card" hidden>
+      <h3>Algo salió mal</h3>
+      <p id="error-message"></p>
+    </section>
+
+    <!-- Story output -->
+    <section id="story-output" class="card story-card" hidden aria-live="polite">
+      <header class="story-header">
+        <h2>Tu historia</h2>
+        <div class="story-actions">
+          <button type="button" id="copy-btn" class="ghost-btn">Copiar</button>
+          <button type="button" id="new-btn" class="ghost-btn">Nueva historia</button>
+        </div>
+      </header>
+      <article id="story-content" class="story-content"></article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Forjado con la API de OpenAI · <a href="https://github.com/IKER2222/DungeonMaker" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
