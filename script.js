@@ -326,4 +326,15 @@
     resetUI();
     form.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+
+  // ---------- Theme toggle ----------
+  const themeToggle = $("#theme-toggle");
+  const THEME_KEY = "dungeonmaker.theme";
+
+  themeToggle.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(THEME_KEY, next);
+  });
 })();

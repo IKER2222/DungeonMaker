@@ -5,13 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DungeonMaker — Generador de historias de D&D</title>
   <meta name="description" content="Genera historias originales de Dungeons & Dragons con IA. Elige temas, añade tus personajes y deja que la magia ocurra.">
-  <link rel="stylesheet" href="styles.css?v=2">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=3">
+  <script>
+    // Inicializa el tema antes del primer render para evitar el "flash"
+    // de tema incorrecto. Respeta la preferencia guardada y, si no hay,
+    // sigue la preferencia del sistema.
+    (function () {
+      try {
+        var saved = localStorage.getItem("dungeonmaker.theme");
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var theme = saved || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
 </head>
 <body>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Cambiar entre tema claro y oscuro">
+    <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-13a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1zm0 16a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1zM4 12a1 1 0 0 1-1 1H1a1 1 0 1 1 0-2h2a1 1 0 0 1 1 1zm19 0a1 1 0 0 1-1 1h-2a1 1 0 1 1 0-2h2a1 1 0 0 1 1 1zM5.64 5.64a1 1 0 0 1 1.41 0l1.42 1.42a1 1 0 0 1-1.41 1.41L5.64 7.05a1 1 0 0 1 0-1.41zm9.89 9.89a1 1 0 0 1 1.41 0l1.42 1.42a1 1 0 0 1-1.41 1.41l-1.42-1.42a1 1 0 0 1 0-1.41zM5.64 18.36a1 1 0 0 1 0-1.41l1.42-1.42a1 1 0 1 1 1.41 1.41l-1.42 1.42a1 1 0 0 1-1.41 0zm9.89-9.89a1 1 0 0 1 0-1.41l1.42-1.42a1 1 0 1 1 1.41 1.41l-1.42 1.42a1 1 0 0 1-1.41 0z"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+    </svg>
+  </button>
+
   <header class="site-header">
     <div class="brand">
-      <img src="assets/logo-256.png?v=2" alt="DungeonMaker" class="brand-logo" width="56" height="56">
+      <img src="assets/logo-256.png?v=3" alt="DungeonMaker" class="brand-logo" width="56" height="56">
       <h1>DungeonMaker</h1>
     </div>
     <p class="tagline">Forja historias épicas de Dungeons &amp; Dragons con IA</p>
@@ -169,6 +193,6 @@
     <p>Forjado con la API de OpenAI · <a href="https://github.com/IKER2222/DungeonMaker" target="_blank" rel="noopener noreferrer">GitHub</a></p>
   </footer>
 
-  <script src="script.js?v=2"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>
