@@ -15,6 +15,14 @@
     corta: 900,
     media: 1800,
     larga: 3500,
+    extensa: 12000,
+  };
+
+  const DURATION_LABELS = {
+    corta: "corta (alrededor de 500 palabras)",
+    media: "media (alrededor de 1000 palabras)",
+    larga: "larga (alrededor de 2000 palabras)",
+    extensa: "muy extensa (mínimo 6000 palabras, no recortes la trama)",
   };
 
   // ---------- DOM ----------
@@ -44,6 +52,14 @@
   const copyCharsBtn = $("#copy-chars-btn");
   const charactersInput = form.elements.namedItem("characters");
 
+  const enemiesSection = $("#enemies-section");
+  const enemiesEmpty = $("#enemies-empty");
+  const enemiesLoadingInline = $("#enemies-loading-inline");
+  const enemiesContent = $("#enemies-content");
+  const generateEnemiesBtn = $("#generate-enemies-btn");
+  const generateEnemiesLabel = $("#generate-enemies-label");
+  const copyEnemiesBtn = $("#copy-enemies-btn");
+
   // ---------- API key persistence ----------
   const savedKey = localStorage.getItem(STORAGE_KEY);
   if (savedKey) apiKeyInput.value = savedKey;
@@ -65,7 +81,7 @@
       "",
       `**Temas:** ${data.themes.join(", ")}`,
       `**Tono:** ${data.tone}`,
-      `**Duración aproximada:** ${data.duration}`,
+      `**Duración aproximada:** ${DURATION_LABELS[data.duration] || data.duration}`,
     ];
 
     const optional = [
@@ -97,6 +113,17 @@
       "Usa lenguaje evocador y descriptivo, pero mantén la información jugable y clara para que el DM pueda dirigirla en mesa.",
     );
 
+    if (data.duration === "extensa") {
+      lines.push(
+        "",
+        "IMPORTANTE: la duración es 'extensa' — la aventura debe ocupar como mínimo 6000 palabras.",
+        "Para llegar a esa extensión sin rellenar de paja: añade más escenas (al menos 5-6 entre los tres actos),",
+        "describe a fondo los lugares y NPCs (apariencia, voz, motivaciones, secretos), incluye encuentros de",
+        "combate detallados, encuentros sociales con NPCs neutrales, opciones de exploración con localizaciones",
+        "secundarias, pistas y subtramas paralelas. NO recortes ni resumas: desarrolla cada acto a fondo.",
+      );
+    }
+
     return lines.join("\n");
   }
 
@@ -108,12 +135,13 @@
     "Siempre respondes en español y formateas tu salida en Markdown.";
 
   const CHARS_SYSTEM_PROMPT =
-    "Eres un Dungeon Master experto que crea fichas de personaje de D&D 5ª edición detalladas " +
-    "y profundamente coherentes con la aventura ya narrada. Transformas una lista breve de personajes " +
-    "(a veces solo nombres, a veces con arquetipos) en fichas completas que encajen como un guante en " +
-    "el mundo, tono y eventos de la historia. Cada personaje debe sentirse parte del mundo, no insertado " +
-    "a la fuerza: su trasfondo conecta con NPCs, lugares o eventos concretos de la aventura. " +
-    "Respondes en español y formateas en Markdown.";
+    "Eres un Dungeon Master experto que crea fichas de personaje completas de D&D 5ª edición, " +
+    "profundamente coherentes con la aventura ya narrada. Tu salida combina narrativa (trasfondo, motivaciones, " +
+    "vínculos con la trama) con un bloque de estadísticas funcionales que el jugador podría llevar a mesa " +
+    "(CA, PG, velocidad, valores de atributo con modificadores, tiradas de salvación competentes, habilidades, " +
+    "ataques principales y conjuros si procede). Cada personaje debe sentirse parte del mundo, no insertado " +
+    "a la fuerza: su trasfondo conecta con NPCs, lugares o eventos concretos de la aventura. Respondes en " +
+    "español y formateas en Markdown.";
 
   function buildCharsPrompt(data, storyText) {
     return [
@@ -133,38 +161,119 @@
       data.setting.trim() ? `- Ambientación: ${data.setting.trim()}` : null,
       data.notes.trim() ? `- Notas del DM: ${data.notes.trim()}` : null,
       "",
-      "Genera una ficha completa para CADA UNO de los personajes mencionados. Estructura cada ficha en Markdown así:",
+      "Genera una ficha completa para CADA UNO de los personajes. Estructura cada ficha en Markdown así:",
       "",
       "## [Nombre del personaje]",
-      "**[Raza] · [Clase] · Nivel [X]**",
+      "**[Raza] · [Clase y subclase] · Nivel [X] · Trasfondo: [trasfondo]**",
       "",
-      "[Descripción narrativa de 2-3 párrafos. Conecta su trasfondo con lugares, NPCs o eventos específicos de la aventura.",
-      "No te limites a 'es un guerrero valiente': dile QUÉ vínculo tiene con ESTA aventura concreta.]",
+      "[Descripción narrativa de 2-3 párrafos. Conecta su trasfondo con lugares, NPCs o eventos específicos",
+      "de la aventura. No te limites a 'es un guerrero valiente': dile QUÉ vínculo tiene con ESTA aventura.]",
       "",
-      "**Habilidades destacadas**",
+      "### Estadísticas (D&D 5e)",
+      "- **CA:** XX · **PG:** XX · **Velocidad:** XX pies · **Bono de competencia:** +X",
+      "- **FUE** XX (+X) · **DES** XX (+X) · **CON** XX (+X) · **INT** XX (+X) · **SAB** XX (+X) · **CAR** XX (+X)",
+      "- **Tiradas de salvación competentes:** ...",
+      "- **Habilidades competentes:** ...",
+      "- **Idiomas:** ...",
+      "",
+      "### Acciones y rasgos",
+      "- **Ataques principales:** [arma — bonificador al ataque, daño y tipo]",
+      "- **Rasgos de clase destacados:** ...",
+      "- **Conjuros notables:** [si es lanzador: lista de hechizos representativos por nivel; si no, omite esta línea]",
+      "",
+      "### Equipamiento característico",
       "- ...",
       "",
-      "**Equipamiento característico**",
-      "- ...",
-      "",
-      "**Motivación en esta aventura**",
-      "[1-2 frases sobre por qué este personaje se involucra en los eventos.]",
-      "",
-      "**Conexión con la trama**",
-      "[1-2 frases sobre algún NPC, lugar o evento de la aventura con el que tenga relación.]",
+      "### Rol en la aventura",
+      "- **Motivación:** [por qué se involucra en los eventos de la historia]",
+      "- **Conexión con la trama:** [NPC, lugar o evento de la aventura con el que tiene relación]",
       "",
       "Reglas importantes:",
-      "1. El nivel de cada personaje debe ser apropiado para los desafíos descritos en la aventura.",
-      "2. Si el jugador ya indicó raza/clase/detalles, respétalos. Si solo dio el nombre, invéntalos en consonancia con la historia.",
-      "3. Cada personaje debe sentirse parte del mundo, no genérico.",
-      "4. NO repitas la sinopsis de la aventura.",
-      "5. Separa cada ficha con `---`.",
+      "1. El nivel de cada personaje debe ser coherente con los desafíos descritos en la aventura.",
+      "2. Los stats deben ser realistas y funcionales para D&D 5e (atributos 8-18 antes de bonos raciales, CA y PG razonables para el nivel).",
+      "3. Si el jugador ya indicó raza/clase/detalles, respétalos. Si solo dio el nombre, invéntalos en consonancia con la historia.",
+      "4. Cada personaje debe sentirse parte del mundo, no genérico.",
+      "5. NO repitas la sinopsis de la aventura.",
+      "6. Separa cada ficha con `---`.",
     ].filter(Boolean).join("\n");
   }
 
   function estimateCharsTokens(text) {
     const count = text.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean).length || 1;
-    return Math.min(4000, Math.max(1000, count * 700));
+    return Math.min(8000, Math.max(1500, count * 1300));
+  }
+
+  // ---------- Enemies (stat blocks) ----------
+  const ENEMIES_SYSTEM_PROMPT =
+    "Eres un Dungeon Master experto que crea bloques de estadísticas de criaturas y NPCs hostiles para " +
+    "Dungeons & Dragons 5ª edición, en el formato clásico del Manual de Monstruos. Tu salida es funcional " +
+    "y lista para mesa: cada bloque incluye CA, PG (con dado de golpe), velocidad, atributos con sus " +
+    "modificadores, salvaciones y habilidades cuando proceda, sentidos, idiomas, valor de desafío (con PX), " +
+    "rasgos especiales, acciones y reacciones. Los enemigos generados encajan en el tono y los eventos de " +
+    "la aventura proporcionada. Respondes en español y formateas en Markdown.";
+
+  function buildEnemiesPrompt(data, storyText) {
+    return [
+      "A continuación tienes la aventura de Dungeons & Dragons que acabas de generar:",
+      "",
+      "---",
+      storyText,
+      "---",
+      "",
+      "Datos del DM sobre los antagonistas:",
+      data.villain.trim() ? `- Antagonista principal / jefe final indicado por el DM: ${data.villain.trim()}` : "- Antagonista principal: deduce del Acto III de la historia.",
+      data.enemies.trim() ? `- Enemigos secundarios indicados por el DM: ${data.enemies.trim()}` : "- Enemigos secundarios: deduce de los encuentros descritos en la historia.",
+      "",
+      "Identifica TODOS los enemigos relevantes que aparecen en la aventura (los indicados por el DM más cualquier",
+      "otra criatura hostil mencionada en los actos). Para cada uno, genera un bloque de estadísticas completo en",
+      "el formato del Manual de Monstruos 5e. Estructura cada bloque así:",
+      "",
+      "## [Nombre del enemigo]",
+      "*[Tamaño] [tipo de criatura], [alineamiento]*",
+      "",
+      "**Clase de Armadura** XX ([fuente: armadura natural, armadura, etc.])",
+      "**Puntos de Golpe** XX (XdX + X)",
+      "**Velocidad** XX pies[, vuelo XX pies si procede, etc.]",
+      "",
+      "**FUE** XX (+X) · **DES** XX (+X) · **CON** XX (+X) · **INT** XX (+X) · **SAB** XX (+X) · **CAR** XX (+X)",
+      "",
+      "**Tiradas de salvación** ... (omite la línea si no tiene)",
+      "**Habilidades** ...",
+      "**Resistencias / Inmunidades al daño** ... (omite si no tiene)",
+      "**Inmunidades a estados** ... (omite si no tiene)",
+      "**Sentidos** percepción pasiva XX[, visión en la oscuridad XX pies, etc.]",
+      "**Idiomas** ...",
+      "**Desafío** X (XXX PX) · **Bono de competencia** +X",
+      "",
+      "### Rasgos",
+      "***[Nombre del rasgo].*** [Descripción.]",
+      "",
+      "### Acciones",
+      "***Multiataque.*** [Si procede.]",
+      "***[Ataque 1].*** *Ataque con arma cuerpo a cuerpo:* +X al impacto, alcance X pies, un objetivo. *Impacto:* X (XdX+X) de daño [tipo].",
+      "",
+      "### Reacciones",
+      "[Si procede; omite la sección si no tiene.]",
+      "",
+      "### Rol en la aventura",
+      "[1-2 frases sobre cuándo y cómo aparece este enemigo en la historia, qué encuentro le corresponde.]",
+      "",
+      "Reglas importantes:",
+      "1. El valor de desafío de cada enemigo debe ser proporcional a su rol en la aventura (esbirros con CR bajo, jefes finales con CR alto).",
+      "2. Las estadísticas deben ser funcionales y coherentes con el formato del Manual de Monstruos 5e.",
+      "3. Si el villano principal es un personaje único, dale rasgos legendarios o de jefe acordes a su importancia.",
+      "4. Separa cada bloque con `---`.",
+      "5. NO repitas la sinopsis de la aventura.",
+    ].filter(Boolean).join("\n");
+  }
+
+  function estimateEnemiesTokens(data) {
+    const userEnemies = `${data.enemies}, ${data.villain}`
+      .split(/[,;\n]+/)
+      .map(s => s.trim())
+      .filter(Boolean).length;
+    const guess = Math.max(3, userEnemies);
+    return Math.min(8000, guess * 1100);
   }
 
   // ---------- Form helpers ----------
@@ -210,6 +319,17 @@
     charsContent.innerHTML = "";
     charsContent.classList.remove("done");
     generateCharsLabel.textContent = "Forjar fichas";
+  }
+
+  function resetEnemiesUI() {
+    hide(enemiesSection);
+    hide(enemiesLoadingInline);
+    hide(enemiesContent);
+    show(enemiesEmpty);
+    hide(copyEnemiesBtn);
+    enemiesContent.innerHTML = "";
+    enemiesContent.classList.remove("done");
+    generateEnemiesLabel.textContent = "Forjar fichas de enemigos";
   }
 
   // ---------- Markdown rendering (mínimo, seguro) ----------
@@ -351,6 +471,7 @@
 
     resetUI();
     resetCharsUI();
+    resetEnemiesUI();
     lastStoryText = "";
     show(loadingEl);
     generateBtn.disabled = true;
@@ -385,6 +506,7 @@
       storyEl.classList.add("done");
       lastStoryText = fullText;
       show(charsSection);
+      show(enemiesSection);
     } catch (err) {
       hide(loadingEl);
       if (err.name === "AbortError") return;
@@ -407,11 +529,15 @@
     }
   });
 
+  let enemiesController = null;
+
   newBtn.addEventListener("click", () => {
     if (currentController) currentController.abort();
     if (charactersController) charactersController.abort();
+    if (enemiesController) enemiesController.abort();
     resetUI();
     resetCharsUI();
+    resetEnemiesUI();
     lastStoryText = "";
     form.scrollIntoView({ behavior: "smooth", block: "start" });
   });
@@ -496,6 +622,83 @@
     } catch {
       copyCharsBtn.textContent = "Error al copiar";
       setTimeout(() => (copyCharsBtn.textContent = "Copiar"), 1500);
+    }
+  });
+
+  // ---------- Enemy stat blocks generation ----------
+  generateEnemiesBtn.addEventListener("click", async () => {
+    const apiKey = apiKeyInput.value.trim();
+    const data = readForm();
+
+    if (!apiKey) {
+      showError("Necesitas tu API key de OpenAI.");
+      apiKeyInput.focus();
+      return;
+    }
+    if (!lastStoryText) {
+      showError("Genera primero una historia.");
+      return;
+    }
+
+    hide(errorEl);
+    hide(enemiesEmpty);
+    hide(enemiesContent);
+    enemiesContent.innerHTML = "";
+    enemiesContent.classList.remove("done");
+    hide(copyEnemiesBtn);
+    show(enemiesLoadingInline);
+    generateEnemiesBtn.disabled = true;
+
+    if (enemiesController) enemiesController.abort();
+    enemiesController = new AbortController();
+
+    const payload = {
+      model: MODEL,
+      stream: true,
+      temperature: 0.8,
+      max_tokens: estimateEnemiesTokens(data),
+      messages: [
+        { role: "system", content: ENEMIES_SYSTEM_PROMPT },
+        { role: "user", content: buildEnemiesPrompt(data, lastStoryText) },
+      ],
+    };
+
+    let firstChunk = true;
+    let fullText = "";
+
+    try {
+      for await (const chunk of streamCompletion(apiKey, payload, enemiesController.signal)) {
+        if (firstChunk) {
+          hide(enemiesLoadingInline);
+          show(enemiesContent);
+          enemiesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          firstChunk = false;
+        }
+        fullText += chunk;
+        enemiesContent.innerHTML = renderMarkdown(fullText);
+      }
+      enemiesContent.classList.add("done");
+      show(copyEnemiesBtn);
+      generateEnemiesLabel.textContent = "Forjar de nuevo";
+    } catch (err) {
+      hide(enemiesLoadingInline);
+      show(enemiesEmpty);
+      if (err.name === "AbortError") return;
+      showError(err.message || "No se pudo conectar con OpenAI.");
+    } finally {
+      generateEnemiesBtn.disabled = false;
+      enemiesController = null;
+    }
+  });
+
+  copyEnemiesBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(enemiesContent.innerText);
+      copyEnemiesBtn.textContent = "¡Copiado!";
+      setTimeout(() => (copyEnemiesBtn.textContent = "Copiar"), 1500);
+    } catch {
+      copyEnemiesBtn.textContent = "Error al copiar";
+      setTimeout(() => (copyEnemiesBtn.textContent = "Copiar"), 1500);
     }
   });
 

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DungeonMaker — Generador de historias de D&D</title>
   <meta name="description" content="Genera historias originales de Dungeons & Dragons con IA. Elige temas, añade tus personajes y deja que la magia ocurra.">
-  <link rel="stylesheet" href="styles.css?v=4">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=5">
   <script>
     // Inicializa el tema antes del primer render para evitar el "flash"
     // de tema incorrecto. Respeta la preferencia guardada y, si no hay,
@@ -35,7 +35,7 @@
 
   <header class="site-header">
     <div class="brand">
-      <img src="assets/logo-256.png?v=4" alt="DungeonMaker" class="brand-logo" width="56" height="56">
+      <img src="assets/logo-256.png?v=5" alt="DungeonMaker" class="brand-logo" width="56" height="56">
       <h1>DungeonMaker</h1>
     </div>
     <p class="tagline">Forja historias épicas de Dungeons &amp; Dragons con IA</p>
@@ -154,6 +154,7 @@
               <option value="corta">Corta (~500 palabras)</option>
               <option value="media" selected>Media (~1000 palabras)</option>
               <option value="larga">Larga (~2000 palabras)</option>
+              <option value="extensa">Extensa (+6000 palabras)</option>
             </select>
           </label>
         </div>
@@ -215,12 +216,37 @@
       </div>
       <article id="chars-content" class="story-content" hidden></article>
     </section>
+
+    <!-- Enemies stat blocks -->
+    <section id="enemies-section" class="card story-card" hidden aria-live="polite">
+      <header class="story-header">
+        <h2>Ficha técnica de enemigos</h2>
+        <div class="story-actions">
+          <button type="button" id="generate-enemies-btn" class="ghost-btn primary-ghost">
+            🐲 <span id="generate-enemies-label">Forjar fichas de enemigos</span>
+          </button>
+          <button type="button" id="copy-enemies-btn" class="ghost-btn" hidden>Copiar</button>
+        </div>
+      </header>
+      <p id="enemies-empty" class="chars-empty">
+        Genera bloques de estadísticas estilo D&amp;D 5e (CA, PG, atributos,
+        ataques, rasgos especiales y desafío) para los enemigos y el villano
+        de la aventura, hilados al rol que cumplen en la historia.
+      </p>
+      <div id="enemies-loading-inline" class="chars-loading-inline" hidden>
+        <div class="d20-spinner" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2 2 8v8l10 6 10-6V8L12 2zm0 2.3 7.6 4.6L12 13.4 4.4 8.9 12 4.3zM4 10.6l7 4.2v6.4l-7-4.2v-6.4zm9 10.6v-6.4l7-4.2v6.4l-7 4.2z"/></svg>
+        </div>
+        <p class="loading-text">Invocando criaturas de las profundidades...</p>
+      </div>
+      <article id="enemies-content" class="story-content" hidden></article>
+    </section>
   </main>
 
   <footer class="site-footer">
     <p>Forjado con la API de OpenAI · <a href="https://github.com/IKER2222/DungeonMaker" target="_blank" rel="noopener noreferrer">GitHub</a></p>
   </footer>
 
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=5"></script>
 </body>
 </html>
