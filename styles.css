@@ -395,6 +395,20 @@ select {
   color: var(--color-text);
 }
 
+.field-required {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  vertical-align: middle;
+}
+
 .field.full-width {
   grid-column: 1 / -1;
 }
@@ -471,6 +485,23 @@ select {
   border-color: var(--color-accent);
   color: var(--color-primary-dark);
   background: var(--color-accent-soft);
+}
+
+.ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ghost-btn.primary-ghost {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.ghost-btn.primary-ghost:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-dark);
 }
 
 .icon-btn {
@@ -615,6 +646,28 @@ select {
   animation: blink 1s steps(2) infinite;
 }
 .story-content.done::after { content: ""; }
+
+/* Inline empty/loading states for the characters section */
+.chars-empty {
+  margin: 0;
+  padding: 0.5rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.chars-loading-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0 0.5rem;
+}
+.chars-loading-inline .d20-spinner svg {
+  width: 40px;
+  height: 40px;
+}
 
 @keyframes blink {
   50% { opacity: 0; }

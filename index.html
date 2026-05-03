@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DungeonMaker — Generador de historias de D&D</title>
   <meta name="description" content="Genera historias originales de Dungeons & Dragons con IA. Elige temas, añade tus personajes y deja que la magia ocurra.">
-  <link rel="stylesheet" href="styles.css?v=3">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=4">
   <script>
     // Inicializa el tema antes del primer render para evitar el "flash"
     // de tema incorrecto. Respeta la preferencia guardada y, si no hay,
@@ -35,7 +35,7 @@
 
   <header class="site-header">
     <div class="brand">
-      <img src="assets/logo-256.png?v=3" alt="DungeonMaker" class="brand-logo" width="56" height="56">
+      <img src="assets/logo-256.png?v=4" alt="DungeonMaker" class="brand-logo" width="56" height="56">
       <h1>DungeonMaker</h1>
     </div>
     <p class="tagline">Forja historias épicas de Dungeons &amp; Dragons con IA</p>
@@ -105,7 +105,10 @@
             <input type="text" name="cities" placeholder="Ej: Hollowmere, Bosque Susurrante, Torre del Cuervo">
           </label>
           <label class="field">
-            <span class="field-label">Personajes principales</span>
+            <span class="field-label">
+              Personajes principales
+              <span class="field-required">obligatorio para fichas de personaje</span>
+            </span>
             <input type="text" name="characters" placeholder="Ej: Lyra (elfa exploradora), Brunn (enano clérigo)">
           </label>
           <label class="field">
@@ -187,12 +190,37 @@
       </header>
       <article id="story-content" class="story-content"></article>
     </section>
+
+    <!-- Characters output -->
+    <section id="chars-section" class="card story-card" hidden aria-live="polite">
+      <header class="story-header">
+        <h2>Fichas de personajes</h2>
+        <div class="story-actions">
+          <button type="button" id="generate-chars-btn" class="ghost-btn primary-ghost">
+            ⚔️ <span id="generate-chars-label">Forjar fichas</span>
+          </button>
+          <button type="button" id="copy-chars-btn" class="ghost-btn" hidden>Copiar</button>
+        </div>
+      </header>
+      <p id="chars-empty" class="chars-empty">
+        Genera fichas detalladas (raza, clase, nivel, trasfondo y motivaciones)
+        para los personajes que indicaste, todos hilados al mundo y eventos de la
+        historia que acabas de forjar.
+      </p>
+      <div id="chars-loading-inline" class="chars-loading-inline" hidden>
+        <div class="d20-spinner" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2 2 8v8l10 6 10-6V8L12 2zm0 2.3 7.6 4.6L12 13.4 4.4 8.9 12 4.3zM4 10.6l7 4.2v6.4l-7-4.2v-6.4zm9 10.6v-6.4l7-4.2v6.4l-7 4.2z"/></svg>
+        </div>
+        <p class="loading-text">Forjando las almas de los héroes...</p>
+      </div>
+      <article id="chars-content" class="story-content" hidden></article>
+    </section>
   </main>
 
   <footer class="site-footer">
     <p>Forjado con la API de OpenAI · <a href="https://github.com/IKER2222/DungeonMaker" target="_blank" rel="noopener noreferrer">GitHub</a></p>
   </footer>
 
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>

@@ -35,6 +35,15 @@
   const copyBtn = $("#copy-btn");
   const newBtn = $("#new-btn");
 
+  const charsSection = $("#chars-section");
+  const charsEmpty = $("#chars-empty");
+  const charsLoadingInline = $("#chars-loading-inline");
+  const charsContent = $("#chars-content");
+  const generateCharsBtn = $("#generate-chars-btn");
+  const generateCharsLabel = $("#generate-chars-label");
+  const copyCharsBtn = $("#copy-chars-btn");
+  const charactersInput = form.elements.namedItem("characters");
+
   // ---------- API key persistence ----------
   const savedKey = localStorage.getItem(STORAGE_KEY);
   if (savedKey) apiKeyInput.value = savedKey;
@@ -98,6 +107,66 @@
     "y respetas estrictamente los temas, tonos y restricciones que indique el usuario. " +
     "Siempre respondes en español y formateas tu salida en Markdown.";
 
+  const CHARS_SYSTEM_PROMPT =
+    "Eres un Dungeon Master experto que crea fichas de personaje de D&D 5ª edición detalladas " +
+    "y profundamente coherentes con la aventura ya narrada. Transformas una lista breve de personajes " +
+    "(a veces solo nombres, a veces con arquetipos) en fichas completas que encajen como un guante en " +
+    "el mundo, tono y eventos de la historia. Cada personaje debe sentirse parte del mundo, no insertado " +
+    "a la fuerza: su trasfondo conecta con NPCs, lugares o eventos concretos de la aventura. " +
+    "Respondes en español y formateas en Markdown.";
+
+  function buildCharsPrompt(data, storyText) {
+    return [
+      "A continuación tienes la aventura de Dungeons & Dragons que acabas de generar para el jugador:",
+      "",
+      "---",
+      storyText,
+      "---",
+      "",
+      "El jugador quiere jugar a los siguientes personajes:",
+      "",
+      data.characters.trim(),
+      "",
+      "Datos adicionales del mundo (úsalos si encajan):",
+      `- Tono: ${data.tone}`,
+      `- Temas: ${data.themes.join(", ")}`,
+      data.setting.trim() ? `- Ambientación: ${data.setting.trim()}` : null,
+      data.notes.trim() ? `- Notas del DM: ${data.notes.trim()}` : null,
+      "",
+      "Genera una ficha completa para CADA UNO de los personajes mencionados. Estructura cada ficha en Markdown así:",
+      "",
+      "## [Nombre del personaje]",
+      "**[Raza] · [Clase] · Nivel [X]**",
+      "",
+      "[Descripción narrativa de 2-3 párrafos. Conecta su trasfondo con lugares, NPCs o eventos específicos de la aventura.",
+      "No te limites a 'es un guerrero valiente': dile QUÉ vínculo tiene con ESTA aventura concreta.]",
+      "",
+      "**Habilidades destacadas**",
+      "- ...",
+      "",
+      "**Equipamiento característico**",
+      "- ...",
+      "",
+      "**Motivación en esta aventura**",
+      "[1-2 frases sobre por qué este personaje se involucra en los eventos.]",
+      "",
+      "**Conexión con la trama**",
+      "[1-2 frases sobre algún NPC, lugar o evento de la aventura con el que tenga relación.]",
+      "",
+      "Reglas importantes:",
+      "1. El nivel de cada personaje debe ser apropiado para los desafíos descritos en la aventura.",
+      "2. Si el jugador ya indicó raza/clase/detalles, respétalos. Si solo dio el nombre, invéntalos en consonancia con la historia.",
+      "3. Cada personaje debe sentirse parte del mundo, no genérico.",
+      "4. NO repitas la sinopsis de la aventura.",
+      "5. Separa cada ficha con `---`.",
+    ].filter(Boolean).join("\n");
+  }
+
+  function estimateCharsTokens(text) {
+    const count = text.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean).length || 1;
+    return Math.min(4000, Math.max(1000, count * 700));
+  }
+
   // ---------- Form helpers ----------
   function readForm() {
     const fd = new FormData(form);
@@ -130,6 +199,17 @@
     hide(outputEl);
     storyEl.textContent = "";
     storyEl.classList.remove("done");
+  }
+
+  function resetCharsUI() {
+    hide(charsSection);
+    hide(charsLoadingInline);
+    hide(charsContent);
+    show(charsEmpty);
+    hide(copyCharsBtn);
+    charsContent.innerHTML = "";
+    charsContent.classList.remove("done");
+    generateCharsLabel.textContent = "Forjar fichas";
   }
 
   // ---------- Markdown rendering (mínimo, seguro) ----------
@@ -244,6 +324,8 @@
 
   // ---------- Submit ----------
   let currentController = null;
+  let charactersController = null;
+  let lastStoryText = "";
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -268,6 +350,8 @@
     }
 
     resetUI();
+    resetCharsUI();
+    lastStoryText = "";
     show(loadingEl);
     generateBtn.disabled = true;
     loadingEl.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -299,6 +383,8 @@
         storyEl.innerHTML = renderMarkdown(fullText);
       }
       storyEl.classList.add("done");
+      lastStoryText = fullText;
+      show(charsSection);
     } catch (err) {
       hide(loadingEl);
       if (err.name === "AbortError") return;
@@ -323,8 +409,94 @@
 
   newBtn.addEventListener("click", () => {
     if (currentController) currentController.abort();
+    if (charactersController) charactersController.abort();
     resetUI();
+    resetCharsUI();
+    lastStoryText = "";
     form.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  // ---------- Character sheets generation ----------
+  generateCharsBtn.addEventListener("click", async () => {
+    const apiKey = apiKeyInput.value.trim();
+    const data = readForm();
+
+    if (!apiKey) {
+      showError("Necesitas tu API key de OpenAI.");
+      apiKeyInput.focus();
+      return;
+    }
+    if (!data.characters.trim()) {
+      showError("Para generar fichas necesitas indicar al menos un personaje en 'Personajes principales'.");
+      charactersInput.focus();
+      charactersInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (!lastStoryText) {
+      showError("Genera primero una historia.");
+      return;
+    }
+
+    hide(errorEl);
+    hide(charsEmpty);
+    hide(charsContent);
+    charsContent.innerHTML = "";
+    charsContent.classList.remove("done");
+    hide(copyCharsBtn);
+    show(charsLoadingInline);
+    generateCharsBtn.disabled = true;
+
+    if (charactersController) charactersController.abort();
+    charactersController = new AbortController();
+
+    const payload = {
+      model: MODEL,
+      stream: true,
+      temperature: 0.85,
+      max_tokens: estimateCharsTokens(data.characters),
+      messages: [
+        { role: "system", content: CHARS_SYSTEM_PROMPT },
+        { role: "user", content: buildCharsPrompt(data, lastStoryText) },
+      ],
+    };
+
+    let firstChunk = true;
+    let fullText = "";
+
+    try {
+      for await (const chunk of streamCompletion(apiKey, payload, charactersController.signal)) {
+        if (firstChunk) {
+          hide(charsLoadingInline);
+          show(charsContent);
+          charsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          firstChunk = false;
+        }
+        fullText += chunk;
+        charsContent.innerHTML = renderMarkdown(fullText);
+      }
+      charsContent.classList.add("done");
+      show(copyCharsBtn);
+      generateCharsLabel.textContent = "Forjar de nuevo";
+    } catch (err) {
+      hide(charsLoadingInline);
+      show(charsEmpty);
+      if (err.name === "AbortError") return;
+      showError(err.message || "No se pudo conectar con OpenAI.");
+    } finally {
+      generateCharsBtn.disabled = false;
+      charactersController = null;
+    }
+  });
+
+  copyCharsBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(charsContent.innerText);
+      copyCharsBtn.textContent = "¡Copiado!";
+      setTimeout(() => (copyCharsBtn.textContent = "Copiar"), 1500);
+    } catch {
+      copyCharsBtn.textContent = "Error al copiar";
+      setTimeout(() => (copyCharsBtn.textContent = "Copiar"), 1500);
+    }
   });
 
   // ---------- Theme toggle ----------
